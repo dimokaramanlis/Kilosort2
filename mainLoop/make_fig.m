@@ -22,7 +22,7 @@ ylabel('Amplitude (arb. units)');
 subplot(2,2,4)
 semilogx(1+nsp, mu, '.')
 ylim([0 100])
-xlim([0 100])
+xlim([0 max(gather(nsp))])
 title('Amplitude vs. Spike Count')
 xlabel('Spike Count');
 ylabel('Amplitude (arb. units)');

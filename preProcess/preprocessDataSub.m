@@ -74,7 +74,7 @@ Wrot = get_whitening_matrix(rez); % outputs a rotation matrix (Nchan by Nchan) w
 fprintf('Time %3.0fs. Loading raw data and applying filters... \n', toc);
 
 fid         = fopen(ops.fbinary, 'r'); % open for reading raw data
-fidW        = fopen(ops.fproc,   'w'); % open for writing processed data
+fidW        = fopen(ops.fproc,   'W'); % open for writing processed data
 
 for ibatch = 1:Nbatch
     % we'll create a binary file of batches of NT samples, which overlap consecutively on ops.ntbuff samples
