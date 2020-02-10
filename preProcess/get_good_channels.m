@@ -11,13 +11,7 @@ twind = ops.twind;
 NchanTOT = ops.NchanTOT;
 NT = ops.NT;
 Nchan = numel(chanMap);
-
-% load data into patches, filter, compute covariance
-if isfield(ops,'fslow')&&ops.fslow<ops.fs/2
-    [b1, a1] = butter(3, [ops.fshigh/ops.fs,ops.fslow/ops.fs]*2, 'bandpass');
-else
-    [b1, a1] = butter(3, ops.fshigh/ops.fs*2, 'high');
-end
+lrange = getOr(ops, {'long_range'}, [30 6]);
 
 fid = fopen(ops.fbinary, 'r');
 % irange = [NT/8:(NT-NT/8)];
@@ -42,7 +36,7 @@ while ibatch<=Nbatch
     % very basic threshold crossings calculation
     datr = datr./std(datr,1,1); % standardize each channel ( but don't whiten)
 
-    mdat = my_min(datr, 30, 1); % get local minima as min value in +/- 30-sample range
+    mdat = my_min(datr, lrange(1), 1); % get local minima as min value in +/- 30-sample range
     ind = find(datr<mdat+1e-3 & datr<ops.spkTh); % take local minima that cross the negative threshold
     [xi, xj] = ind2sub(size(datr), ind); % back to two-dimensional indexing
     xj(xi<ops.nt0 | xi>NT-ops.nt0) = []; % filtering may create transients at beginning or end. Remove those.

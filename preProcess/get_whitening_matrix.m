@@ -13,13 +13,6 @@ Nchan = rez.ops.Nchan;
 xc = rez.xc;
 yc = rez.yc;
 
-% load data into patches, filter, compute covariance
-if isfield(ops,'fslow')&&ops.fslow<ops.fs/2
-    [b1, a1] = butter(3, [ops.fshigh/ops.fs,ops.fslow/ops.fs]*2, 'bandpass');
-else
-    [b1, a1] = butter(3, ops.fshigh/ops.fs*2, 'high');
-end
-
 fprintf('Getting channel whitening matrix... \n');
 fid = fopen(ops.fbinary, 'r');
 CC = gpuArray.zeros( Nchan,  Nchan, 'single'); % we'll estimate the covariance from data batches, then add to this variable
