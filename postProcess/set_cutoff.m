@@ -9,11 +9,14 @@ ops = rez.ops;
 dt = 1/1000; % step size for CCG binning
 
 Nk = max(rez.st3(:,2)); % number of templates
+spkinds = accumarray(rez.st3(:,2), 1:size(rez.st3,1),[],@(x) {x});
 
 % sort by firing rate first
 rez.good = zeros(Nk, 1);
 for j = 1:Nk
-    ix = find(rez.st3(:,2)==j); % find all spikes from this neuron
+    %disp(j)
+    %ix = find(rez.st3(:,2)==j); % find all spikes from this neuron
+    ix = spkinds{j};
     ss = rez.st3(ix,1)/ops.fs; % convert to seconds
     if numel(ss)==0
         continue; % break if there are no spikes
