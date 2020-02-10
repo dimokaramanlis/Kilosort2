@@ -11,8 +11,10 @@ wPCA = gather(ops.wPCA); % use PCA projections to reconstruct templates when we 
 
 ccsplit = rez.ops.AUCsplit; % this is the threshold for splits, and is one of the main parameters users can change
 
-NchanNear   = min(ops.Nchan, 32);
-Nnearest    = min(ops.Nchan, 32);
+% NchanNear   = min(ops.Nchan, 32);
+% Nnearest    = min(ops.Nchan, 32);
+NchanNear   = min(ops.min_NchanNear, 32);
+Nnearest    = min(ops.min_Nnearest, 32);
 sigmaMask   = ops.sigmaMask;
 
 ik = 0;
@@ -122,7 +124,7 @@ while ik<Nfilt
 
     % if the CCG has a dip, don't do the split.
     % These thresholds are consistent with the ones from merges.
-    if Q12<.25 && R<.05 % if both metrics are below threshold.
+    if Q12<.2 && R<.05 % if both metrics are below threshold.
         nccg = nccg+1; % keep track of how many splits were voided by the CCG criterion
         continue;
     end
