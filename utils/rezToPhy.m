@@ -183,7 +183,8 @@ if ~isempty(savePath)
         else
             fprintf(fid,'sample_rate = %i.\n',rez.ops.fs);
         end
-        fprintf(fid,'hp_filtered = False');
+        fprintf(fid,'hp_filtered = False\n');
+        fprintf(fid,'template_scaling = 20.0\n');
         fclose(fid);
     end
 end
