@@ -34,8 +34,10 @@ NT  	= ops.NT;
 
 
 % two variables for the same thing? number of nearest channels to each primary channel
-NchanNear   = min(ops.Nchan, 32);
-Nnearest    = min(ops.Nchan, 32);
+min_NchanNear = getOr(ops, 'min_NchanNear', 32); 
+min_Nnearest  = getOr(ops, 'min_Nnearest', 32); 
+NchanNear   = min(ops.Nchan, min_NchanNear);
+Nnearest    = min(ops.Nchan, min_Nnearest);
 
 % decay of gaussian spatial mask centered on a channel
 sigmaMask  = ops.sigmaMask;

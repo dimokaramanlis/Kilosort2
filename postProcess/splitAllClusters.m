@@ -11,10 +11,11 @@ wPCA = gather(ops.wPCA); % use PCA projections to reconstruct templates when we 
 
 ccsplit = rez.ops.AUCsplit; % this is the threshold for splits, and is one of the main parameters users can change
 
-% NchanNear   = min(ops.Nchan, 32);
-% Nnearest    = min(ops.Nchan, 32);
-NchanNear   = min(ops.min_NchanNear, 32);
-Nnearest    = min(ops.min_Nnearest, 32);
+min_NchanNear = getOr(ops, 'min_NchanNear', 32); 
+min_Nnearest  = getOr(ops, 'min_Nnearest', 32); 
+
+NchanNear   = min(ops.Nchan, min_NchanNear);
+Nnearest    = min(ops.Nchan, min_Nnearest);
 sigmaMask   = ops.sigmaMask;
 
 ik = 0;
@@ -32,6 +33,10 @@ isplit = 1:Nfilt; % keep track of original cluster for each cluster. starts with
 dt = 1/1000;
 nccg = 0;
 
+if ops.lowmem 
+    mfilePC = memmapfile(rez.cProjPCpath, 'Format',{'single',[NchanNear, 3, size(rez.st3,1)],'x'});
+end
+
 while ik<Nfilt
     if rem(ik, 100)==1
       % periodically write updates
@@ -48,7 +53,15 @@ while ik<Nfilt
 
     ss = rez.st3(isp,1)/ops.fs; % convert to seconds
 
-    clp0 = rez.cProjPC(isp, :, :); % get the PC projections for these spikes
+    if ops.lowmem 
+        % go to disk to access cProjPC
+        clp0 = mfilePC.Data.x(:,:,isp); 
+        clp0 = permute(clp0, [3 2 1]);
+    else
+        clp0 = rez.cProjPC(isp, :, :); % get the PC projections for these spikes
+    end
+    
+    
     clp0 = gpuArray(clp0(:,:));
     clp = clp0 - mean(clp0,1); % mean center them
 
@@ -199,7 +212,7 @@ rez.simScore(isplit) = 1; % 1 means they come from the same parent
 rez.iNeigh   = gather(iList(:, 1:Nfilt)); % get the new neighbor templates
 rez.iNeighPC    = gather(iC(:, iW(1:Nfilt))); % get the new neighbor channels
 
-rez.Wphy = cat(1, zeros(1+ops.nt0min, Nfilt, Nrank), rez.W); % for Phy, we need to pad the spikes with zeros so the spikes are aligned to the center of the window
+rez.Wphy = cat(1, zeros(ops.nt0 - 2*ops.nt0min - 1, Nfilt, Nrank), rez.W); % for Phy, we need to pad the spikes with zeros so the spikes are aligned to the center of the window
 
 rez.isplit = isplit; % keep track of origins for each cluster
 

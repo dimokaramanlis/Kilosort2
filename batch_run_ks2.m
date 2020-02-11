@@ -30,7 +30,10 @@ NpyMatlabPath ='C:\Users\admin_lokal\Documents\GitHub\npy-matlab';
 addpath(genpath(KilosortPath)); addpath(genpath(NpyMatlabPath));
 %==========================================================================
 for iexp = 1:numel(rootpaths)
-    
+    %----------------------------------------------------------------------
+    diarypath = fullfile(rootpaths{iexp}, 'ks_sorted', 'ks2_output_logger.txt');
+    if exist(diarypath, 'file'); delete(diarypath); end
+    diary(diarypath); diary on;
     %----------------------------------------------------------------------
     if ~exist(fullfile(rootpaths{iexp},'ks_sorted'),'dir')
         mkdir(fullfile(rootpaths{iexp},'ks_sorted'));
@@ -89,6 +92,8 @@ for iexp = 1:numel(rootpaths)
 
         % saving here is a good idea, because the rest can be resumed after loading rez
         save(rezpath,'rez', '-v7.3');
+        % save figure
+        figure(1); saveas(gcf, fullfile(rootpaths{iexp}, 'ks_sorted','batch_reordering.png'));
     else
         rez = load(rezpath);
         rez = rez.rez;
@@ -97,16 +102,17 @@ for iexp = 1:numel(rootpaths)
    
 
     % main tracking and template matching algorithm
-    rez = learnAndSolve8bDK(rez);
-
+    rez = learnAndSolve8b(rez);
+    % save figure
+    figure(2); saveas(gcf, fullfile(rootpaths{iexp}, 'ks_sorted','main_optimization.png'));
+    
     % final merges
     rez = find_merges(rez, 1);
 
     % final splits by SVD
-    rez = splitAllClustersDK(rez, 1);
-
+    rez = splitAllClusters(rez, 1);
     % final splits by amplitudes
-    rez = splitAllClustersDK(rez, 0);
+    rez = splitAllClusters(rez, 0);
 
     % decide on cutoff
     rez = set_cutoff(rez);
@@ -115,23 +121,22 @@ for iexp = 1:numel(rootpaths)
 
     % write to Phy
     fprintf('Saving results to Phy  \n')
-    rezToPhyDK(rez, fullfile(ops.root, 'ks_sorted'))
+    rezToPhy(rez, fullfile(ops.root, 'ks_sorted'))
 
     % if you want to save the results to a Matlab file...
 
     % discard features in final rez file (too slow to save)wm
-    rez.cProj = [];
-    rez.cProjPC = [];
-    delete(rez.cProjpath); delete(rez.cProjPCpath);
+    rez.cProj = []; rez.cProjPC = [];
+    if ops.lowmem; delete(rez.cProjpath); delete(rez.cProjPCpath);end
     delete(ops.fproc); % remove temporary file
-
     
     % save final results as rez2
     fprintf('Saving final results in rez2  \n')
     save(fullfile(ops.root, 'ks_sorted','rez2.mat'),'rez', '-v7.3');
     clear ops metadata;
-
-    
+    %----------------------------------------------------------------------
+    diary off;
+    %----------------------------------------------------------------------   
 end
 %==========================================================================
 end

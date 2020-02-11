@@ -3,6 +3,7 @@ function rez = learnTemplates(rez, iorder)
 
 ops = rez.ops;
 ops.fig = getOr(ops, 'fig', 1); % whether to show plots every N batches
+ops.fig = getOr(ops, 'nskipDrop', 5); % whether to show plots every N batches
 
 NrankPC = 6; % this one is the rank of the PCs, used to detect spikes with threshold crossings
 Nrank = 3; % this one is the rank of the templates
@@ -26,8 +27,10 @@ Nfilt 	= ops.Nfilt;
 Nchan 	= ops.Nchan;
 
 % two variables for the same thing? number of nearest channels to each primary channel
-NchanNear   = min(ops.Nchan, 32);
-Nnearest    = min(ops.Nchan, 32);
+min_NchanNear = getOr(ops, 'min_NchanNear', 32); 
+min_Nnearest  = getOr(ops, 'min_Nnearest', 32); 
+NchanNear   = min(ops.Nchan, min_NchanNear);
+Nnearest    = min(ops.Nchan, min_Nnearest);
 
 % decay of gaussian spatial mask centered on a channel
 sigmaMask  = ops.sigmaMask;
@@ -167,7 +170,7 @@ for ibatch = 1:niter
 
     if ibatch<niter
         % during the main "learning" phase of fitting a model
-        if rem(ibatch, 5)==1
+        if rem(ibatch, ops.nskipDrop)==1
             % this drops templates based on spike rates and/or similarities to other templates
             [W, U, dWU, mu, nsp, ndrop] = ...
                 triageTemplates2(ops, iW, C2C, W, U, dWU, mu, nsp, ndrop);

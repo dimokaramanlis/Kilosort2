@@ -15,15 +15,12 @@ if size(rez.st3,2)>4
     rez.st3 = rez.st3(:,1:4);
 end
 
-[~, isort]   = sort(rez.st3(:,1), 'ascend');
-rez.st3      = rez.st3(isort, :);
-rez.cProj    = rez.cProj(isort, :);
-rez.cProjPC  = rez.cProjPC(isort, :, :);
+% not needed, happened already
+% [~, isort]   = sort(rez.st3(:,1), 'ascend'); 
+% rez.st3      = rez.st3(isort, :);
+% rez.cProj    = rez.cProj(isort, :);
+% rez.cProjPC  = rez.cProjPC(isort, :, :);
 
-% ix = rez.st3(:,4)>12;
-% rez.st3 = rez.st3(ix, :);
-% rez.cProj = rez.cProj(ix, :);
-% rez.cProjPC = rez.cProjPC(ix, :,:);
 
 fs = dir(fullfile(savePath, '*.npy'));
 for i = 1:length(fs)
@@ -61,9 +58,7 @@ end
 templates = permute(templates, [3 2 1]); % now it's nTemplates x nSamples x nChannels
 templatesInds = repmat([0:size(templates,3)-1], size(templates,1), 1); % we include all channels so this is trivial
 
-templateFeatures = rez.cProj;
 templateFeatureInds = uint32(rez.iNeigh);
-pcFeatures = rez.cProjPC;
 pcFeatureInds = uint32(rez.iNeighPC);
 
 whiteningMatrix = rez.Wrot/rez.ops.scaleproc;
@@ -89,7 +84,7 @@ spikeAmps = tempAmpsUnscaled(spikeTemplates).*amplitudes;
 
 % take the average of all spike amps to get actual template amps (since
 % tempScalingAmps are equal mean for all templates)
-ta = clusterAverage(spikeTemplates, spikeAmps);
+ta = clusterAverage(spikeTemplates, spikeAmps); clear spikeAmps;
 tids = unique(spikeTemplates);
 tempAmps(tids) = ta; % because ta only has entries for templates that had at least one spike
 gain = getOr(rez.ops, 'gain', 1);
@@ -97,15 +92,15 @@ tempAmps = gain*tempAmps'; % for consistency, make first dimension template numb
 
 if ~isempty(savePath)
 
-    writeNPY(spikeTimes, fullfile(savePath, 'spike_times.npy'));
+    writeNPY(spikeTimes, fullfile(savePath, 'spike_times.npy')); clear spikeTimes;
     writeNPY(uint32(spikeTemplates-1), fullfile(savePath, 'spike_templates.npy')); % -1 for zero indexing
     if size(rez.st3,2)>4
         writeNPY(uint32(spikeClusters-1), fullfile(savePath, 'spike_clusters.npy')); % -1 for zero indexing
     else
         writeNPY(uint32(spikeTemplates-1), fullfile(savePath, 'spike_clusters.npy')); % -1 for zero indexing
     end
-    writeNPY(amplitudes, fullfile(savePath, 'amplitudes.npy'));
-    writeNPY(templates, fullfile(savePath, 'templates.npy'));
+    writeNPY(amplitudes, fullfile(savePath, 'amplitudes.npy')); clear amplitudes;
+    writeNPY(templates, fullfile(savePath, 'templates.npy')); clear templates;
     writeNPY(templatesInds, fullfile(savePath, 'templates_ind.npy'));
 
     chanMap0ind = int32(chanMap0ind);
@@ -113,19 +108,34 @@ if ~isempty(savePath)
     writeNPY(chanMap0ind, fullfile(savePath, 'channel_map.npy'));
     writeNPY([xcoords ycoords], fullfile(savePath, 'channel_positions.npy'));
 
-    writeNPY(templateFeatures, fullfile(savePath, 'template_features.npy'));
     writeNPY(templateFeatureInds'-1, fullfile(savePath, 'template_feature_ind.npy'));% -1 for zero indexing
-    writeNPY(pcFeatures, fullfile(savePath, 'pc_features.npy'));
     writeNPY(pcFeatureInds'-1, fullfile(savePath, 'pc_feature_ind.npy'));% -1 for zero indexing
-
-
+    
     writeNPY(whiteningMatrix, fullfile(savePath, 'whitening_mat.npy'));
     writeNPY(whiteningMatrixInv, fullfile(savePath, 'whitening_mat_inv.npy'));
 
-    if isfield(rez, 'simScore')
+   
+
+    if ~isempty(rez.cProj)
+        writeNPY(rez.cProj, fullfile(savePath, 'template_features.npy'));
+        writeNPY(rez.cProjPC, fullfile(savePath, 'pc_features.npy'));
+    else
+        NchanNear = rez.ops.min_Nnearest; 
+        mfileF = memmapfile(rez.cProjpath, 'Format',{'single',[NchanNear, numel(rez.idiscard)],'x'});
+        writeNPY(mfileF.Data.x(:,~rez.idiscard)', fullfile(savePath, 'template_features.npy'));
+        clear mFileF;
+        
+        mfilePC = memmapfile(rez.cProjPCpath, 'Format',{'single',[NchanNear, 3, numel(rez.idiscard)],'x'});
+        writeNPY(permute(mfilePC.Data.x(:,:,~rez.idiscard), [3 2 1]), fullfile(savePath, 'pc_features.npy'));
+        clear mfilePC;
+    end
+    
+    
+     if isfield(rez, 'simScore')
         similarTemplates = rez.simScore;
         writeNPY(similarTemplates, fullfile(savePath, 'similar_templates.npy'));
     end
+
 
     % save a list of "good" clusters for Phy
 %     fileID = fopen(fullfile(savePath, 'channel_names.tsv'), 'w');
@@ -183,7 +193,7 @@ if ~isempty(savePath)
         else
             fprintf(fid,'sample_rate = %i.\n',rez.ops.fs);
         end
-        fprintf(fid,'hp_filtered = False\n');
+        fprintf(fid,'hp_filtered = False');
         fprintf(fid,'template_scaling = 20.0\n');
         fclose(fid);
     end

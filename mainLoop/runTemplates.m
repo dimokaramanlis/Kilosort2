@@ -34,36 +34,45 @@ ihalf = find(rez.iorig==istart);
 
 iorder_sorted = ihalf:-1:1;
 iorder = rez.iorig(iorder_sorted);
-[rez, st3_0, fW_0,fWpc_0] = trackAndSort(rez, iorder);
+if rez.ops.lowmem
+    [rez, st3_0, fW_0,fWpc_0] = trackAndSortDK(rez, iorder);
+else
+    [rez, st3_0, fW_0,fWpc_0] = trackAndSort(rez, iorder);
+end
 st3_0(:,5) = iorder_sorted(st3_0(:,5));
 
 iorder_sorted = (ihalf+1):Nbatches;
 iorder = rez.iorig(iorder_sorted);
-[rez, st3_1, fW_1,fWpc_1] = trackAndSort(rez, iorder);
+if rez.ops.lowmem
+    [rez, st3_1, fW_1,fWpc_1] = trackAndSortDK(rez, iorder);
+else
+    [rez, st3_1, fW_1,fWpc_1] = trackAndSort(rez, iorder);
+end
 st3_1(:,5) = iorder_sorted(st3_1(:,5));
 
 st3     = cat(1, st3_0, st3_1);
-fW      = cat(2, fW_0, fW_1);
-fWpc    = cat(3, fWpc_0, fWpc_1);
-
 [~, isort] = sort(st3(:,1));
 st3 = st3(isort, :);
-fW = fW(:, isort);
-fWpc = fWpc(:, :, isort);
+
+if rez.ops.lowmem 
+    rez = combineAndSortFeatures(rez, isort, fW_0, fWpc_0, fW_1, fWpc_1, size(st3_0,1),  size(st3_1,1));
+else
+    % work with principal components
+    fWpc    = cat(3, fWpc_0, fWpc_1); clear fWpc_0; clear fWpc_1;
+    fWpc = permute(fWpc(:, :, isort), [3 2 1]); %  permute the PC projections in the right order
+    rez.cProjPC     = fWpc; 
+    
+    % work with features
+    fW      = cat(2, fW_0, fW_1); clear fW_0; clear fW_1;
+    fW = fW(:, isort)';
+    rez.cProj    = fW;     % the template features are stored in cProj, like in Kilosort1
+end
 
 % just display the total number of spikes
 size(st3,1)
 
 rez.st3 = st3;
 rez.st2 = st3; % keep also an st2 copy, because st3 will be over-written by one of the post-processing steps
-
-% the template features are stored in cProj, like in Kilosort1
-rez.cProj    = fW';
-
-%  permute the PC projections in the right order
-rez.cProjPC     = permute(fWpc, [3 2 1]); %zeros(size(st3,1), 3, nNeighPC, 'single');
-% iNeighPC keeps the indices of the channels corresponding to the PC features
-
 
 % this whole next block is just done to compress the compressed templates
 % we separately svd the time components of each template, and the spatial components

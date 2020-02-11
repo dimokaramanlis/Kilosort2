@@ -2,7 +2,7 @@ function rez = combineAndSortFeatures(rez, isort, fW_0, fWpc_0, fW_1, fWpc_1, ns
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
-Nnearest = 32; 
+Nnearest = rez.ops.min_Nnearest;
 Nrank   = 3;
 %==========================================================================
 % deal with PCs
@@ -87,50 +87,14 @@ clear f1;
 
 delete(fW_0); delete(fW_1); clear mfileF;
 
-
-% 
-% fidf0 = fopen(fW_0, 'r');
-% f0 = fread(fidpc0, [Nnearest nspk0], '*single');
-% fclose(fidf0);
-% 
-% fidf1 = fopen(fW_1, 'r');
-% f1 = fread(fidf1, [Nnearest nspk1], '*single');
-% fclose(fidf1);
-% 
-% fW = cat(2, f0, f1);
-% clear f0 f1;
-% fW = fW(:, isort);
-% 
-% 
-% fid_fW_final = fopen(fWfinalpath, 'W');
-% fwrite(fid_fW_final, fW, 'single');
-% fclose(fid_fW_final);
-% clear fW; 
-% 
-
-
 %==========================================================================
-% fW      = cat(2, fW_0, fW_1);
-% fWpc    = cat(3, fWpc_0, fWpc_1);
-% 
-% fW = fW(:, isort);
-% fWpc = fWpc(:, :, isort);
-% 
-% % just display the total number of spikes
-% size(st3,1)
-% 
-% % the template features are stored in cProj, like in Kilosort1
-% rez.cProj    = fW';
-% 
-% %  permute the PC projections in the right order
-% rez.cProjPC     = permute(fWpc, [3 2 1]); %zeros(size
 
 
 rez.cProjPC = [];
 rez.cProj   = [];
 rez.cProjPCpath = fWpcfinalpath;
 rez.cProjpath = fWfinalpath;
-
+%==========================================================================
 
 
 end

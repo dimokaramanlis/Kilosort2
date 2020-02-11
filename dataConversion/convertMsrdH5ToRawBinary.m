@@ -59,13 +59,15 @@ fprintf('Total length of recording is %2.2f min...\n',sum(stimsamples)/fs/60);
 labellist = {H5fileInfo.Label};
 chanMap = getChannelMapForRawBinary(labellist,'dataformat','msrd','channelnumber',NchanTOT);
 %--------------------------------------------------------------------------
+% set upsampling factor
+if fs == 1e4,   upsampfac = 3;  else,    upsampfac = 1;      end % upsample 10K to 30K     
+%--------------------------------------------------------------------------
 fprintf('Saving .mcd data as .dat...\n');
-% chunk size
-maxSamples= 48e5;
 
-fidOut= fopen(targetpath, 'W'); %using W (capital), makes writing ~4x faster
-if fs == 1e4,   upsampfac = 3;  else,    upsampfac = 1;      end % upsample 10K to 30K
+maxSamples = 64e5;% chunk size
 
+fidOut = fopen(targetpath, 'W'); %using W (capital), makes writing ~4x faster
+msg=[];
 
 for iFile=1:Nfiles
     
@@ -88,9 +90,13 @@ for iFile=1:Nfiles
     end
     
     %report status
-    fprintf('Time %3.0f min. Mcd files processed %d/%d \n',toc/60, iFile,Nfiles);
+    fprintf(repmat('\b', 1, numel(msg)));
+    msg=sprintf('Time %3.0f min. Mcd files processed %d/%d \n', toc/60, iFile,Nfiles);
+    fprintf(msg);
+   
 end
+
 fclose(fidOut);
-if upsampfac>1, bininfo.fs = fs*upsampfac; end % upsample 10K to 30K
+bininfo.fs = fs*upsampfac;
 %--------------------------------------------------------------------------
 end

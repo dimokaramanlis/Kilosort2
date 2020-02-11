@@ -59,7 +59,7 @@ if( sortData )
         ops.rootZ = rootZ;
 
         ops.fbinary     = fullfile(rootZ,  'sim_binary.imec.ap.bin');
-
+        ops.nskipDrop   = 5;
 
         % preprocess data to create temp_wh.dat
         rez = preprocessDataSub(ops);
@@ -86,7 +86,7 @@ if( sortData )
         rez = set_cutoff(rez);
          
         % this saves to Phy
-        rezToPhy(rez, rootZ);
+        rezToPhyDK(rez, rootZ);
 
         % discard features in final rez file (too slow to save)
         rez.cProj = [];

@@ -5,7 +5,7 @@ function rez = clusterSingleBatches(rez)
 % the matrix of similarity scores is then re-ordered so that low dissimilaity is along the diagonal
 
 
-rng('default'); rng(1);
+rng('default'); rng(1); gpurng(1);
 
 ops = rez.ops;
 

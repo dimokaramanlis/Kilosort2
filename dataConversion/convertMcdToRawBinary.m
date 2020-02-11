@@ -32,8 +32,6 @@ filesamples = floor(filesamples);
 % make bininfo file for splitting later
 bininfo.stimsamples = accumarray(stimids, filesamples,[],@sum);
 fs = round(1/mcdfileInfo.TimeStampResolution); % sampling frequency
-bininfo.fs=fs;
-bininfo.NchanTOT = NchanTOT-4;
 fprintf('Total length of recording is %2.2f min...\n', sum(filesamples)/fs/60);
 %--------------------------------------------------------------------------
 %get information about the array arrangement and the signal
@@ -48,14 +46,17 @@ newRange=2^15*[-1 1]; multFact=range(newRange)/(maxVoltage-minVoltage);
 %--------------------------------------------------------------------------
 % get the channel names based on the map of the array
 chanMap = getChannelMapForRawBinary(labellist,'dataformat','mcd','channelnumber',NchanTOT,'meatype',ops.meatype);
+bininfo.NchanTOT = numel(chanMap);
+%--------------------------------------------------------------------------
+% set upsampling factor
+if fs == 1e4,   upsampfac = 3;  else,    upsampfac = 1;      end % upsample 10K to 30K     
 %--------------------------------------------------------------------------
 fprintf('Saving .mcd data as .dat...\n');
 
-maxSamples = 48e5;
+maxSamples = 64e5;
 
 fidOut= fopen(targetpath, 'W'); %using W (capital), makes writing ~4x faster
 msg=[];
-if fs == 1e4,   upsampfac = 3;  else,    upsampfac = 1;      end % upsample 10K to 30K     
 for iFile=1:Nfiles
     mcdpathname = [ops.root,filesep,mcdfilenames{iFile}];
     nsamples = filesamples(iFile);
@@ -83,7 +84,7 @@ for iFile=1:Nfiles
     
 end
 fclose(fidOut); clear mexprog; %unload DLL
-if upsampfac>1, bininfo.fs = fs*upsampfac; end % upsample 10K to 30K  
+bininfo.fs = fs*upsampfac;
 %--------------------------------------------------------------------------
 end
 
