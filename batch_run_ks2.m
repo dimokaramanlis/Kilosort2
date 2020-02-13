@@ -25,8 +25,8 @@ if isempty(rootpaths) || ~exist(rootpaths,'dir')
     end 
 end
 %==========================================================================
-KilosortPath = 'C:\Users\admin_lokal\Documents\GitHub\KiloSort2';
-NpyMatlabPath ='C:\Users\admin_lokal\Documents\GitHub\npy-matlab';
+KilosortPath = 'C:\Users\Admin\Documents\GitHub\KiloSort2';
+NpyMatlabPath ='C:\Users\Admin\Documents\GitHub\npy-matlab';
 addpath(genpath(KilosortPath)); addpath(genpath(NpyMatlabPath));
 %==========================================================================
 for iexp = 1:numel(rootpaths)
@@ -85,7 +85,7 @@ for iexp = 1:numel(rootpaths)
     %----------------------------------------------------------------------
     metadata.bininfo = bininfo;
     metadata.binpath = binpath;
-    metadata.whpath = fullfile('F:\DATA_sorted', 'temp_wh.dat');
+    metadata.whpath = fullfile('D:\DATA_sorted', 'temp_wh.dat');
     %----------------------------------------------------------------------
     % get options and make channel map
     ops = getKs2OptionsMEA(metadata);
@@ -104,8 +104,6 @@ for iexp = 1:numel(rootpaths)
         figure(1);
         set(gcf,'PaperPositionMode','auto');
         print(fullfile(kssortedpath, 'batch_reordering'), '-dpng','-r0');
-        saveas(gcf, fullfile(kssortedpath, 'batch_reordering.fig'));
-        %saveas(gcf, fullfile(kssortedpath, 'batch_reordering.png'));
     else
         rez = load(rezpath);
         rez = rez.rez;
@@ -118,8 +116,6 @@ for iexp = 1:numel(rootpaths)
     figure(2); 
     set(gcf,'PaperPositionMode','auto')
     print(fullfile(kssortedpath, 'main_optimization'), '-dpng','-r0');
-    saveas(gcf, fullfile(kssortedpath, 'main_optimization.fig'));
-    %saveas(gcf, fullfile(kssortedpath, 'main_optimization.png'));
     
     % final merges
     rez = find_merges(rez, 1);
@@ -131,7 +127,6 @@ for iexp = 1:numel(rootpaths)
 
     % decide on cutoff
     rez = set_cutoff(rez);
-
     fprintf('found %d good units \n', sum(rez.good>0))
 
     % write to Phy
