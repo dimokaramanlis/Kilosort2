@@ -74,14 +74,14 @@ if ops.Show && ~isempty(fonsets)
     xlabel('Time from pulse onset (ms)'); xlim(plotint * 1e3* [-1 1]);
     ylabel('Voltage (V)'); ylim([0 ymax+0.025]);
     ax = gca; ax.Box = 'off';       ax.TickDir = 'out';     pbaspect([2 1 1]);
-    xticks(-10:0.1:10);        yticks(0:0.1:10);      title('onset');
+    xticks(-10:0.1:10);        yticks(round(double([0 ymax/2 ymax]),1));      title('onset');
 
     subplot(2,2, 2)
     line(tshape, alignedpulsesoff', 'LineStyle','-','Color',[0 0.45 1 0.6]);
     xlabel('Time from pulse offset (ms)'); xlim(plotint * 1e3* [-1 1]);
     ylabel('Voltage (V)'); ylim([0 ymax+0.025]);
     ax = gca; ax.Box = 'off';       ax.TickDir = 'out';     pbaspect([2 1 1]);
-    xticks(-10:0.1:10);        yticks(0:0.1:10);      title('offset');
+    xticks(-10:0.1:10);        yticks(round(double([0 ymax/2 ymax]),1));      title('offset');
     
     subplot(2,2, [3 4])
     tonsets = (fonplot-1)/fs; toffsets = (foffplot-1)/fs;
@@ -93,11 +93,11 @@ if ops.Show && ~isempty(fonsets)
     line(tonsets, ypulses, 'LineStyle','none', 'Color', 'r','Marker','x');
     title('onsets: x, offsets: o');
     pbaspect([5 1 1]);
-    yticks(0:0.1:10);
+    yticks(round(double([0 ymax/2 ymax]),1));
 
     %savepngFast(mf, ops.exportpath,[ops.filename '_frametimings'], 400);
     set(mf,'PaperPositionMode','auto')
-    print(fullfile(ops.exportpath,[ops.filename '_frametimings']), '-dpng','-r0');
+    print(fullfile(ops.exportpath,[ops.filename '_frametimings.png']), '-dpng','-r0');
     close(mf);
 end
 %==========================================================================

@@ -212,7 +212,7 @@ for ibatch = 1:niter
         if ops.fig
             try
                 if ibatch==1
-                    figHand = figure('Position', [100 100 1000 1000],'color','w','Visible','on');
+                    figHand = figure('Position', [100 100 1200 800],'color','w','Visible','on');
                 else
                     figure(figHand);
                 end
