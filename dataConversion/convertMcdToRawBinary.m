@@ -70,7 +70,6 @@ for iFile=1:Nfiles
         [~,~,dat]=mexprog(8,hfile, chanMap, offset, sampstoload);%read data
         dat=int16(dat*multFact)';        
         if upsampfac>1, dat = kron(dat,ones(1,upsampfac,'int16')); end     % upsample 10K to 30K        
-
         
         fwrite(fidOut, dat, 'int16');
     end
@@ -88,20 +87,3 @@ bininfo.fs = fs*upsampfac;
 %--------------------------------------------------------------------------
 end
 
-
-function [dllpath,libtoload] = getMCSdllPath()
-%GETMCSDLLPATH Summary of this function goes here
-
-dlllocation = which('load_multichannel_systems_mcd');
-dllpath = fileparts(dlllocation);
-
-switch computer()
-    case 'PCWIN'; libtoload = 'nsMCDLibraryWin32.dll';
-    case 'GLNX86'; libtoload = 'nsMCDLibraryLinux32.so';
-    case 'PCWIN64'; libtoload = 'nsMCDLibraryWin64.dll';
-    case 'GLNXA64'; libtoload = 'nsMCDLibraryLinux64.so';
-    case 'MACI64'; libtoload = 'nsMCDLibraryMacIntel.dylib';
-    otherwise
-        disp('Your architecture is not supported'); return;
-end
-end

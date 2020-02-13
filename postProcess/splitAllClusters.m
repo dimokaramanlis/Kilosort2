@@ -152,7 +152,7 @@ while ik<Nfilt
     r0 = 2*abs(n1 - n2)/(n1 + n2); % similarity of amplitudes
 
     % if the templates are correlated, and their amplitudes are similar, stop the split!!!
-    if cc(1,2)>.9 && r0<.2
+    if cc(1,2)>.9 && r0<.2 
         continue;
     end
 

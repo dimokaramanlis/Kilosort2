@@ -31,20 +31,21 @@ addpath(genpath(KilosortPath)); addpath(genpath(NpyMatlabPath));
 %==========================================================================
 for iexp = 1:numel(rootpaths)
     %----------------------------------------------------------------------
-    diarypath = fullfile(rootpaths{iexp}, 'ks_sorted', 'ks2_output_logger.txt');
+    kssortedpath = fullfile(rootpaths{iexp},'ks_sorted');
+    % make ks sorted folder
+    if ~exist(kssortedpath,'dir'), mkdir(kssortedpath); end
+    %----------------------------------------------------------------------
+    % make diary
+    diarypath = fullfile(kssortedpath, 'ks2_output_logger.txt');
     if exist(diarypath, 'file'); delete(diarypath); end
     diary(diarypath); diary on;
     %----------------------------------------------------------------------
-    if ~exist(fullfile(rootpaths{iexp},'ks_sorted'),'dir')
-        mkdir(fullfile(rootpaths{iexp},'ks_sorted'));
-    end
     binname = 'alldata.dat'; 
-    binpath = fullfile(rootpaths{iexp},'ks_sorted', binname);
+    binpath = fullfile(kssortedpath, binname);
     %----------------------------------------------------------------------
     metadata = [];
-    metadata.root = rootpaths{iexp}; 
-    metadata.meatype = meatypes{iexp};
-    
+    metadata.root     = rootpaths{iexp}; 
+    metadata.meatype  = meatypes{iexp};
     metadata.exptypes = exptypes{iexp};
     %----------------------------------------------------------------------
     % search for ks binary in the root folder or do conversion
@@ -52,14 +53,20 @@ for iexp = 1:numel(rootpaths)
         
         disp('Kilosort binary found!')
         % load bininfo
-        bininfopath = fullfile(metadata.root,'ks_sorted','bininfo.mat');
+        bininfopath = fullfile(kssortedpath, 'bininfo.mat');
         if ~exist(bininfopath,'file')
             error("Can't find bininfo.mat, exiting"); 
         end
         ifile = load(bininfopath); bininfo = ifile.bininfo;
         
     else
-        
+        %----------------------------------------------------------------------
+        %read frametimes
+        if ~exist(fullfile(rootpaths{iexp}, 'frametimes'),'dir')
+            fprintf('Extracting frametimings...\n');
+            readFrametimes('mcdatapath', rootpaths{iexp});
+        end
+        %----------------------------------------------------------------------
         disp('Kilosort binary missing, starting conversion...')
         metadata = getmcdmetadata(metadata,verbose);
 
@@ -71,10 +78,11 @@ for iexp = 1:numel(rootpaths)
         %move file to the root
         disp('Moving the file back to root...'); tic;
         movefile(convpath, fullfile(metadata.root,'ks_sorted'));
-        save(fullfile(metadata.root,'ks_sorted','bininfo.mat'),'bininfo', '-v7.3');
+        save(fullfile(kssortedpath, 'bininfo.mat'),'bininfo', '-v7.3');
         fprintf('Done! Took %.2f min\n', toc/60);
         
     end
+    %----------------------------------------------------------------------
     metadata.bininfo = bininfo;
     metadata.binpath = binpath;
     metadata.whpath = fullfile('F:\DATA_sorted', 'temp_wh.dat');
@@ -82,7 +90,7 @@ for iexp = 1:numel(rootpaths)
     % get options and make channel map
     ops = getKs2OptionsMEA(metadata);
     %----------------------------------------------------------------------
-    rezpath = fullfile(ops.root, 'ks_sorted','rez.mat');
+    rezpath = fullfile(kssortedpath, 'rez.mat');
     if ~exist(rezpath,'file')
          % preprocess data to create temp_wh.dat
         rez = preprocessDataSub(ops);
@@ -93,18 +101,25 @@ for iexp = 1:numel(rootpaths)
         % saving here is a good idea, because the rest can be resumed after loading rez
         save(rezpath,'rez', '-v7.3');
         % save figure
-        figure(1); saveas(gcf, fullfile(rootpaths{iexp}, 'ks_sorted','batch_reordering.png'));
+        figure(1);
+        set(gcf,'PaperPositionMode','auto');
+        print(fullfile(kssortedpath, 'batch_reordering'), '-dpng','-r0');
+        saveas(gcf, fullfile(kssortedpath, 'batch_reordering.fig'));
+        %saveas(gcf, fullfile(kssortedpath, 'batch_reordering.png'));
     else
         rez = load(rezpath);
         rez = rez.rez;
         tic;
     end
    
-
     % main tracking and template matching algorithm
     rez = learnAndSolve8b(rez);
     % save figure
-    figure(2); saveas(gcf, fullfile(rootpaths{iexp}, 'ks_sorted','main_optimization.png'));
+    figure(2); 
+    set(gcf,'PaperPositionMode','auto')
+    print(fullfile(kssortedpath, 'main_optimization'), '-dpng','-r0');
+    saveas(gcf, fullfile(kssortedpath, 'main_optimization.fig'));
+    %saveas(gcf, fullfile(kssortedpath, 'main_optimization.png'));
     
     % final merges
     rez = find_merges(rez, 1);
@@ -132,10 +147,10 @@ for iexp = 1:numel(rootpaths)
     
     % save final results as rez2
     fprintf('Saving final results in rez2  \n')
-    save(fullfile(ops.root, 'ks_sorted','rez2.mat'),'rez', '-v7.3');
+    save(fullfile(kssortedpath, 'rez2.mat'),'rez', '-v7.3');
     clear ops metadata;
     %----------------------------------------------------------------------
-    diary off;
+    diary off; close all;
     %----------------------------------------------------------------------   
 end
 %==========================================================================

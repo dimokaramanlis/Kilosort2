@@ -151,17 +151,15 @@ rez.ccb = gather(ccb0);
 [ccbsort, iorig] = sortBatches2(ccb0);
 
 % some mandatory diagnostic plots to understand drift in this dataset
-figure;
+figure('Position', [100 100 1400 800],'color','w','Visible','on');
 subplot(1,2,1)
-imagesc(ccb0, [-5 5]); drawnow
-xlabel('batches')
-ylabel('batches')
+imagesc(ccb0, [-5 5]); axis equal; drawnow
+xlabel('batches'); ylabel('batches')
 title('batch to batch distance')
 
 subplot(1,2,2)
-imagesc(ccbsort, [-5 5]); drawnow
-xlabel('sorted batches')
-ylabel('sorted batches')
+imagesc(ccbsort, [-5 5]); axis equal; drawnow
+xlabel('sorted batches'); ylabel('sorted batches')
 title('AFTER sorting')
 
 rez.iorig = gather(iorig);
