@@ -77,8 +77,8 @@ for iexp = 1:numel(rootpaths)
         
         %move file to the root
         disp('Moving the file back to root...'); tic;
-        movefile(convpath, fullfile(metadata.root,'ks_sorted'));
         save(fullfile(kssortedpath, 'bininfo.mat'),'bininfo', '-v7.3');
+        movefile(convpath, fullfile(metadata.root,'ks_sorted'));
         fprintf('Done! Took %.2f min\n', toc/60);
         
     end
