@@ -98,5 +98,6 @@ end
 
 fclose(fidOut);
 bininfo.fs = fs*upsampfac;
+bininfo.stimsamples = bininfo.stimsamples * upsampfac;
 %--------------------------------------------------------------------------
 end

@@ -84,6 +84,7 @@ for iFile=1:Nfiles
 end
 fclose(fidOut); clear mexprog; %unload DLL
 bininfo.fs = fs*upsampfac;
+bininfo.stimsamples = bininfo.stimsamples * upsampfac;
 %--------------------------------------------------------------------------
 end
 
