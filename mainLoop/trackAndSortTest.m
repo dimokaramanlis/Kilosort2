@@ -1,4 +1,4 @@
-function [rez, st3, fWpath, fWpcpath] = trackAndSortDK(rez, iorder)
+function [rez, st3, fW, fWpc, fWpath, fWpcpath] = trackAndSortTest(rez, iorder)
 % This is the extraction phase of the optimization. 
 % iorder is the order in which to traverse the batches
 
@@ -38,6 +38,7 @@ min_NchanNear = getOr(ops, 'min_NchanNear', 32);
 min_Nnearest  = getOr(ops, 'min_Nnearest', 32); 
 NchanNear   = min(ops.Nchan, min_NchanNear);
 Nnearest    = min(ops.Nchan, min_Nnearest);
+
 % decay of gaussian spatial mask centered on a channel
 sigmaMask  = ops.sigmaMask;
 
@@ -79,7 +80,7 @@ Params(3) = ops.Th(end); % usually the threshold is much lower on the last pass
 % kernels for subsample alignment
 [Ka, Kb] = getKernels(ops, 10, 1);
 
-p1 = getOr(ops, 'nspdecay', .95); % decay of nsp estimate in each batch
+p1 = .95; % decay of nsp estimate in each batch
 
 % the list of channels each template lives on
 % also, covariance matrix between templates
@@ -103,6 +104,10 @@ if ~isfield(rez, 'WA') || isempty(rez.WA)
 end
 
 % these ones store features per spike
+fW  = zeros(Nnearest, 1e7, 'single'); % Nnearest is the number of nearest templates to store features for
+fWpc = zeros(NchanNear, Nrank, 1e7, 'single'); % NchanNear is the number of nearest channels to take PC features from
+
+% these ones store features per spike
 [fpathproc, ~] = fileparts(ops.fproc);
 fWpath   = fullfile(fpathproc, 'fW0.dat');
 fWpcpath = fullfile(fpathproc, 'fWpc0.dat');
@@ -114,11 +119,6 @@ end
 
 fidSavefW   = fopen(fWpath, 'W');
 fidSavefWpc = fopen(fWpcpath, 'W');
-
-% 
-% fW  = zeros(Nnearest, 1e7, 'single'); % Nnearest is the number of nearest templates to store features for
-% fWpc = zeros(NchanNear, Nrank, 1e7, 'single'); % NchanNear is the number of nearest channels to take PC features from
-
 
 for ibatch = 1:niter    
     k = iorder(ibatch); % k is the index of the batch in absolute terms
@@ -198,10 +198,12 @@ for ibatch = 1:niter
     
     if ntot+numel(x0)>size(st3,1)
         % if we exceed the original allocated memory, double the allocated sizes
-%         fW(:, 2*size(st3,1))    = 0;
-%         fWpc(:,:,2*size(st3,1)) = 0;
+        fW(:, 2*size(st3,1))    = 0;
+        fWpc(:,:,2*size(st3,1)) = 0;
         st3(2*size(st3,1), 1)   = 0;
     end
+    
+    
     
     st3(irange,1) = double(st); % spike times
     st3(irange,2) = double(id0+1); % spike clusters (1-indexing)
@@ -209,13 +211,12 @@ for ibatch = 1:niter
     st3(irange,4) = double(vexp); % residual variance of this spike
     st3(irange,5) = ibatch; % batch from which this spike was found
     
-%     fW(:, irange) = gather(featW); % template features for this batch
-%     fWpc(:, :, irange) = gather(featPC); % PC features
-%     
+    fW(:, irange) = gather(featW); % template features for this batch
+    fWpc(:, :, irange) = gather(featPC); % PC features
+    
+    
     fwrite(fidSavefW,   gather(featW),  'single');
     fwrite(fidSavefWpc, gather(featPC), 'single');
-
-    
     
     ntot = ntot + numel(x0); % keeps track of total number of spikes so far
     
@@ -238,16 +239,13 @@ for ibatch = 1:niter
     end
 end
 fclose(fid);
+toc
 fclose(fidSavefW);
 fclose(fidSavefWpc);
-
-
-toc
-
 % discards the unused portion of the arrays
 st3 = st3(1:ntot, :);
-%fW = fW(:, 1:ntot);
-%fWpc = fWpc(:,:, 1:ntot);
+fW = fW(:, 1:ntot);
+fWpc = fWpc(:,:, 1:ntot);
 
 rez.nsp = nsp;
 

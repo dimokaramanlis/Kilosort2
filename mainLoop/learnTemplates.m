@@ -77,7 +77,7 @@ Params(13) = 0;
 % kernels for subsample alignment
 [Ka, Kb] = getKernels(ops, 10, 1);
 
-p1 = .95; % decay of nsp estimate in each batch
+p1 = getOr(ops, 'nspdecay', .95); % decay of nsp estimate in each batch
 
 fprintf('Time %3.0fs. Optimizing templates ...\n', toc)
 

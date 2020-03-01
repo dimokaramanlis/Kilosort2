@@ -80,7 +80,7 @@ Params(3) = ops.Th(end); % usually the threshold is much lower on the last pass
 % kernels for subsample alignment
 [Ka, Kb] = getKernels(ops, 10, 1);
 
-p1 = .95; % decay of nsp estimate in each batch
+p1 = getOr(ops, 'nspdecay', .95); % decay of nsp estimate in each batch
 
 % the list of channels each template lives on
 % also, covariance matrix between templates

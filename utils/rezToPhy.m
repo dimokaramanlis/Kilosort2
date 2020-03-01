@@ -36,7 +36,7 @@ spikeTemplates = uint32(rez.st3(:,2));
 if size(rez.st3,2)>4
     spikeClusters = uint32(1+rez.st3(:,5));
 end
-amplitudes = rez.st3(:,3);
+amplitudes = single(rez.st3(:,3));
 
 Nchan = rez.ops.Nchan;
 
@@ -67,7 +67,7 @@ whiteningMatrixInv = whiteningMatrix^-1;
 % here we compute the amplitude of every template...
 
 % unwhiten all the templates
-tempsUnW = zeros(size(templates));
+tempsUnW = zeros(size(templates), 'single');
 for t = 1:size(templates,1)
     tempsUnW(t,:,:) = squeeze(templates(t,:,:))*whiteningMatrixInv;
 end
@@ -113,21 +113,14 @@ if ~isempty(savePath)
     
     writeNPY(whiteningMatrix, fullfile(savePath, 'whitening_mat.npy'));
     writeNPY(whiteningMatrixInv, fullfile(savePath, 'whitening_mat_inv.npy'));
-
-   
-
-    if ~isempty(rez.cProj)
+    
+    if rez.ops.lowmem
+        savePrincipalComponents2(rez,  fullfile(savePath, 'pc_features.npy'),  fullfile(savePath, 'template_features.npy'));
+    else
+        if ~isempty(rez.cProj)
         writeNPY(rez.cProj, fullfile(savePath, 'template_features.npy'));
         writeNPY(rez.cProjPC, fullfile(savePath, 'pc_features.npy'));
-    else
-        NchanNear = rez.ops.min_Nnearest; 
-        mfileF = memmapfile(rez.cProjpath, 'Format',{'single',[NchanNear, numel(rez.idiscard)],'x'});
-        writeNPY(mfileF.Data.x(:,~rez.idiscard)', fullfile(savePath, 'template_features.npy'));
-        clear mFileF;
-        
-        mfilePC = memmapfile(rez.cProjPCpath, 'Format',{'single',[NchanNear, 3, numel(rez.idiscard)],'x'});
-        writeNPY(permute(mfilePC.Data.x(:,:,~rez.idiscard), [3 2 1]), fullfile(savePath, 'pc_features.npy'));
-        clear mfilePC;
+        end
     end
     
     

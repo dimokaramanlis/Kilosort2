@@ -67,6 +67,9 @@ for j = 1:Nk
         R = min(rir); % R is the estimated probability that any of the center bins are refractory, and kicks in when there are very few spikes
         if flag 
             if Q<.2 && R<.05 % if both refractory criteria are met
+			
+			if ops.lowmem, mergePrincipalComponents(rez, isort(j), ix(k)); end
+
             i = ix(k);
             % now merge j into i and move on
             rez.st3(rez.st3(:,2)==isort(j),2) = i; % simply overwrite all the spikes of neuron j with i (i>j by construction)

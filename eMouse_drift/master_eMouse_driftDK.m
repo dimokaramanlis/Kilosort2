@@ -60,7 +60,7 @@ if( sortData )
 
         ops.fbinary     = fullfile(rootZ,  'sim_binary.imec.ap.bin');
         ops.nskipDrop   = 5;
-
+        ops.lowmem      = 1;
         % preprocess data to create temp_wh.dat
         rez = preprocessDataSub(ops);
 
@@ -69,7 +69,7 @@ if( sortData )
         
         % main optimization
         % learnAndSolve8;
-        rez = learnAndSolve8bDK(rez);
+        rez = learnAndSolve8b(rez);
         
 
         % final splits
@@ -77,16 +77,16 @@ if( sortData )
         
 
         % final splits by SVD
-        rez    = splitAllClustersDK(rez, 1);
+        rez    = splitAllClustersFast(rez, 1);
         
         % final splits by amplitudes
-        rez = splitAllClustersDK(rez, 0);
+        rez = splitAllClustersFast(rez, 0);
     
         % decide on cutoff
         rez = set_cutoff(rez);
          
         % this saves to Phy
-        rezToPhyDK(rez, rootZ);
+        rezToPhy(rez, rootZ);
 
         % discard features in final rez file (too slow to save)
         rez.cProj = [];

@@ -50,12 +50,13 @@ else
 end
 st3_1(:,5) = iorder_sorted(st3_1(:,5));
 
-st3     = cat(1, st3_0, st3_1);
+nspk0 = size(st3_0,1); nspk1 = size(st3_1,1);
+
+st3     = cat(1, st3_0, st3_1); clear st3_0 st3_1;
 [~, isort] = sort(st3(:,1));
-st3 = st3(isort, :);
 
 if rez.ops.lowmem 
-    rez = combineAndSortFeatures(rez, isort, fW_0, fWpc_0, fW_1, fWpc_1, size(st3_0,1),  size(st3_1,1));
+    rez = combineAndSortFeatures5(rez, fW_0, fWpc_0, fW_1, fWpc_1, nspk0,  nspk1, st3);
 else
     % work with principal components
     fWpc    = cat(3, fWpc_0, fWpc_1); clear fWpc_0; clear fWpc_1;
@@ -68,11 +69,14 @@ else
     rez.cProj    = fW;     % the template features are stored in cProj, like in Kilosort1
 end
 
+st3 = st3(isort, :);
+
 % just display the total number of spikes
-size(st3,1)
+fprintf('Total number of spikes: %d\n', size(st3,1));
 
 rez.st3 = st3;
-rez.st2 = st3; % keep also an st2 copy, because st3 will be over-written by one of the post-processing steps
+%rez.st2 = st3; % keep also an st2 copy, because st3 will be over-written by one of the post-processing steps
+
 
 % this whole next block is just done to compress the compressed templates
 % we separately svd the time components of each template, and the spatial components

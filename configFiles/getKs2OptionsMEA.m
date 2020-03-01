@@ -41,10 +41,11 @@ end
 ops.chanMap             = fullfile(ops.root, 'ks_sorted','chanMap.mat'); % make this file using createChannelMapFile.m		
 %==========================================================================
 %extra ops
-ops.lowmem              = 0; % saves features on hard drive instead of memory
+ops.lowmem              = 1; % saves features on hard drive instead of memory
 ops.min_NchanNear       = 21;
 ops.min_Nnearest        = 21;
 ops.nskipDrop           = 2; % how frequently to triage templates
+ops.nspdecay            = 0.9; % decay of nsp estimate in each batch
 %==========================================================================
 % sample rate
 ops.fs                  = metadata.bininfo.fs; %sampling frequency		
@@ -62,7 +63,7 @@ ops.Th                  = [8 4];
 ops.lam                 = 10;  
 
 % splitting a cluster at the end requires at least this much isolation for each sub-cluster (max = 1)
-ops.AUCsplit            = 0.9; 
+ops.AUCsplit            = 0.87; 
 
 % minimum spike rate (Hz), if a cluster falls below this for too long it gets removed
 ops.minFR               = 1/50; 
@@ -92,8 +93,7 @@ ops.scaleproc           = 200;   % int16 scaling of whitened data
 ops.nPCs                = 3; % how many PCs to project the spikes into
 ops.useRAM              = 0; % not yet available
 %==========================================================================	
-%hidden options
-ops.nt0                 = floor(round(20*ops.fs/1e4)/2)*2+1; %spike template time bins
+ops.nt0                 = floor(round(21*ops.fs/1e4)/2)*2+1; %spike template time bins
 ops.nt0min              = floor(round(7*ops.fs/1e4)/2)*2;    %spike template time bins
 ops.loc_range           = [round(1.5*ops.fs/1e4) 1];         % ranges to detect peaks; plus/minus in time and channel ([5 4])		
 ops.long_range          = [round(10*ops.fs/1e4) 1];          % ranges to detect isolated peaks ([30 6])		

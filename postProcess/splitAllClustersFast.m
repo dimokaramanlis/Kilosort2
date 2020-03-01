@@ -1,4 +1,4 @@
-function [rez, X] = splitAllClusters(rez, flag)
+function [rez, X] = splitAllClustersFast(rez, flag)
 % i call this algorithm "bimodal pursuit"
 % split clusters if they have bimodal projections
 % the strategy is to maximize a bimodality score and find a single vector projection
@@ -53,7 +53,9 @@ while ik<Nfilt
     end
 
     ss = rez.st3(isp,1)/ops.fs; % convert to seconds
-
+    
+    clp0 = gpuArray.zeros(nSpikes, 3*NchanNear, 'single');
+    
     if ops.lowmem 
         % go to disk to access cProjPC
         % clp0 = mfilePC.Data.x(:,:,isp); 
@@ -61,17 +63,16 @@ while ik<Nfilt
 		
 		unitpath = fullfile(mpath, sprintf(rez.cProjPCpath, ik));
 		fid = fopen(unitpath, 'r');
-		clp0 = fread(fid, [nSpikes 3*NchanNear], '*single');
+		clp0(:) = fread(fid, [nSpikes 3*NchanNear], '*single');
 		fclose(fid);
-		clp0 = reshape(clp0, [nSpikes, 3, NchanNear]);
-
 		
     else
-        clp0 = rez.cProjPC(isp, :, :); % get the PC projections for these spikes
+        %clp0 = rez.cProjPC(isp, :, :); % get the PC projections for these spikes
+        clp0(:) = rez.cProjPC(isp, :, :);
     end
     
     
-    clp0 = gpuArray(clp0(:,:));
+    %clp0 = gpuArray(clp0(:,:));
     clp = clp0 - mean(clp0,1); % mean center them
 
     clp = clp - my_conv2(clp, 250, 1); % subtract a running average, because the projections are NOT drift corrected
@@ -79,7 +80,7 @@ while ik<Nfilt
     % now use two different ways to initialize the bimodal direction
     % the main script calls this function twice, and does both initializations
     if flag
-        [u s v] = svdecon(clp');
+        [u, s, v] = svdecon(clp');
         w = u(:,1); % initialize with the top PC
     else
         w = mean(clp0, 1)'; % initialize with the mean of NOT drift-corrected trace
@@ -88,21 +89,29 @@ while ik<Nfilt
 
     % initial projections of waveform PCs onto 1D vector
     x = gather(clp * w);
-    s1 = var(x(x>mean(x))); % initialize estimates of variance for the first
-    s2 = var(x(x<mean(x))); % and second gaussian in the mixture of 1D gaussians
+%     s1 = var(x(x>mean(x))); % initialize estimates of variance for the first
+%     s2 = var(x(x<mean(x))); % and second gaussian in the mixture of 1D gaussians
+    s12 = [var(x(x>mean(x))) var(x(x<mean(x)))];
+    
+%     mu1 = mean(x(x>mean(x))); % initialize the means as well
+%     mu2 = mean(x(x<mean(x)));
+    mu12 = [mean(x(x>mean(x))) mean(x(x<mean(x)))];
 
-    mu1 = mean(x(x>mean(x))); % initialize the means as well
-    mu2 = mean(x(x<mean(x)));
     p  = mean(x>mean(x)); % and the probability that a spike is assigned to the first Gaussian
 
-    logp = zeros(numel(isp), 2); % initialize matrix of log probabilities that each spike is assigned to the first or second cluster
-
+    logP = zeros(50, 1); % this is the cost function: we can monitor its increase
     % do 50 pursuit iteration
     for k = 1:50
         % for each spike, estimate its probability to come from either Gaussian cluster
-        logp(:,1) = -1/2*log(s1) - (x-mu1).^2/(2*s1) + log(p);
-        logp(:,2) = -1/2*log(s2) - (x-mu2).^2/(2*s2) + log(1-p);
+        
+        
+        
+%         logp(:,1) = -1/2*log(s1) - (x-mu1).^2/(2*s1) + log(p);
+%         logp(:,2) = -1/2*log(s2) - (x-mu2).^2/(2*s2) + log(1-p);
 
+        logp = -1/2*log(s12) - (x - mu12).^2./(2*s12) + log([p 1-p]);
+        
+        
         lMax = max(logp,[],2);
         logp = logp - lMax; % subtract the max for floating point accuracy
         rs = exp(logp); % exponentiate the probabilities
@@ -113,19 +122,29 @@ while ik<Nfilt
         rs = rs./sum(rs,2); % normalize so that probabilities sum to 1
 
         p = mean(rs(:,1)); % mean probability to be assigned to Gaussian 1
-        mu1 = (rs(:,1)' * x )/sum(rs(:,1)); % new estimate of mean of cluster 1 (weighted by "responsibilities")
-        mu2 = (rs(:,2)' * x )/sum(rs(:,2)); % new estimate of mean of cluster 2 (weighted by "responsibilities")
+        
+%         mu1 = (rs(:,1)' * x )/sum(rs(:,1)); % new estimate of mean of cluster 1 (weighted by "responsibilities")
+%         mu2 = (rs(:,2)' * x )/sum(rs(:,2)); % new estimate of mean of cluster 2 (weighted by "responsibilities")
+        mu12 = (rs' * x./sum(rs,1)')';
+        
+        
+%         s1 = (rs(:,1)' * (x-mu1).^2 )/sum(rs(:,1)); % new estimates of variances
+%         s2 = (rs(:,2)' * (x-mu2).^2 )/sum(rs(:,2));
+        s12 = diag((rs' * (x - mu12).^2)./sum(rs,1)')';
 
-        s1 = (rs(:,1)' * (x-mu1).^2 )/sum(rs(:,1)); % new estimates of variances
-        s2 = (rs(:,2)' * (x-mu2).^2 )/sum(rs(:,2));
-
+        
         if (k>10 && rem(k,2)==1)
             % starting at iteration 10, we start re-estimating the pursuit direction
             % that is, given the Gaussian cluster assignments, and the mean and variances,
             % we re-estimate w
-            StS  = clp' * (clp .* (rs(:,1)/s1 + rs(:,2)/s2))/nSpikes; % these equations follow from the model
-            StMu = clp' * (rs(:,1)*mu1/s1 + rs(:,2)*mu2/s2)/nSpikes;
 
+            %StS  = clp' * (clp .* (rs(:,1)/s1 + rs(:,2)/s2))/nSpikes; % these equations follow from the model
+            StS = clp' * (clp .* sum(rs./s12, 2))/nSpikes;
+            
+            %StMu = clp' * (rs(:,1)*mu1/s1 + rs(:,2)*mu2/s2)/nSpikes;
+            StMu = clp' * sum(rs.*(mu12./s12), 2)/nSpikes;
+            
+            
             w = StMu'/StS; % this is the new estimate of the best pursuit direection
             w = normc(w'); % which we unit normalize
             x = gather(clp * w);  % the new projections of the data onto this direction
@@ -155,13 +174,14 @@ while ik<Nfilt
     c1  = wPCA * reshape(mean(clp0(ilow,:),1), 3, []); %  the reconstructed mean waveforms for putatiev cluster 1
     c2  = wPCA * reshape(mean(clp0(~ilow,:),1), 3, []); %  the reconstructed mean waveforms for putative cluster 2
     cc = corrcoef(c1, c2); % correlation of mean waveforms
+    
     n1 =sqrt(sum(c1(:).^2)); % the amplitude estimate 1
     n2 =sqrt(sum(c2(:).^2)); % the amplitude estimate 2
 
     r0 = 2*abs(n1 - n2)/(n1 + n2); % similarity of amplitudes
 
     % if the templates are correlated, and their amplitudes are similar, stop the split!!!
-    if cc(1,2)>.9 && r0<.2 
+    if cc(1,2)>.9 && r0<.2
 		ntemp = ntemp + 1;
         continue;
     end

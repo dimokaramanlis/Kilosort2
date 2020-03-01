@@ -15,13 +15,17 @@ function clusterQuantity = clusterAverage(clu, spikeQuantity)
 % array, the values of any duplicate indices are added. So this is the
 % fastest way I know to make the sum of the entries of spikeQuantity for each of
 % the unique entries of clu
-[~, spikeCounts] = countUnique(clu);
+% [~, spikeCounts] = countUnique(clu);
+% 
+% % convert clu to indices, i.e. just values between 1 and nClusters. 
+% [~,~,cluInds] = unique(clu);
+% 
+% % summation
+% q = full(sparse(cluInds, ones(size(clu)), double(spikeQuantity))); 
+% 
+% % had sums, so dividing by spike counts gives the mean depth of each cluster
+% clusterQuantity = q./spikeCounts; 
 
-% convert clu to indices, i.e. just values between 1 and nClusters. 
-[~,~,cluInds] = unique(clu);
 
-% summation
-q = full(sparse(cluInds, ones(size(clu)), double(spikeQuantity))); 
-
-% had sums, so dividing by spike counts gives the mean depth of each cluster
-clusterQuantity = q./spikeCounts; 
+clusterQuantity = accumarray(clu, spikeQuantity, [max(clu) 1], @mean, single(0));
+clusterQuantity((clusterQuantity == 0)) = [];

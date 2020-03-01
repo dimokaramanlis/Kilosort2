@@ -11,12 +11,17 @@ dt = 1/1000; % step size for CCG binning
 Nk = max(rez.st3(:,2)); % number of templates
 spkinds = accumarray(rez.st3(:,2), 1:size(rez.st3,1),[],@(x) {x});
 
+fprintf('Setting cutoffs \n')
+
 % sort by firing rate first
 rez.good = zeros(Nk, 1);
 for j = 1:Nk
-    %disp(j)
+    if rem(j, 100)==1
+      % periodically write updates
+       fprintf('%2.2f sec, checked %d/%d clusters\n', toc, j, Nk)
+    end
     %ix = find(rez.st3(:,2)==j); % find all spikes from this neuron
-    ix = spkinds{j};
+    ix = sort(spkinds{j}, 'ascend');
     ss = rez.st3(ix,1)/ops.fs; % convert to seconds
     if numel(ss)==0
         continue; % break if there are no spikes
@@ -59,21 +64,25 @@ for j = 1:Nk
     [K, Qi, Q00, Q01, rir] = ccg(st, st, 500, dt); % % compute the auto-correlogram with 500 bins at 1ms bins
     Q = min(Qi/(max(Q00, Q01))); % this is a measure of refractoriness
     rez.est_contam_rate(j) = Q; % this score will be displayed in Phy
-
+    
+    ndelete = nnz(vexp<=Th);
+    if ops.lowmem && ndelete>0, deletePrincipalComponents(rez, j, (vexp<=Th)); end
+    
     rez.Ths(j) = Th; % store the threshold for potential debugging
     rez.st3(ix(vexp<=Th), 2) = 0; % any spikes below the threshold get discarded into a 0-th cluster.
 end
 
+fprintf('Done with setting cutoffs, checked %d/%d clusters \n', j, Nk)
+toc
 % we sometimes get NaNs, why? replace with full contamination
 rez.est_contam_rate(isnan(rez.est_contam_rate)) = 1;
 
 % remove spikes assigned to the 0 cluster
 ix = rez.st3(:,2)==0;
 rez.st3(ix, :) = [];
-rez.idiscard = ix;
 
 if ~isempty(rez.cProj)
-    rez.cProj(ix, :) = []; % remove their template projections too
+    rez.cProj  (ix, :)   = []; % remove their template projections too
     rez.cProjPC(ix, :,:) = []; % and their PC projections
     
 end

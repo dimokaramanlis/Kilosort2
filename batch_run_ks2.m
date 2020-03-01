@@ -25,8 +25,9 @@ if isempty(rootpaths) || ~exist(rootpaths,'dir')
     end 
 end
 %==========================================================================
-KilosortPath = 'C:\Users\Admin\Documents\GitHub\KiloSort2';
-NpyMatlabPath ='C:\Users\Admin\Documents\GitHub\npy-matlab';
+up = userpath; [pp, ~] = fileparts(up);
+KilosortPath  = fullfile(pp, 'GitHub\KiloSort2');
+NpyMatlabPath = fullfile(pp, 'GitHub\npy-matlab');
 addpath(genpath(KilosortPath)); addpath(genpath(NpyMatlabPath));
 %==========================================================================
 for iexp = 1:numel(rootpaths)
@@ -85,12 +86,14 @@ for iexp = 1:numel(rootpaths)
     %----------------------------------------------------------------------
     metadata.bininfo = bininfo;
     metadata.binpath = binpath;
-    metadata.whpath = fullfile('D:\DATA_sorted', 'temp_wh.dat');
+    metadata.whpath = fullfile('F:\DATA_sorted', 'temp_wh.dat');
     %----------------------------------------------------------------------
     % get options and make channel map
     ops = getKs2OptionsMEA(metadata);
     %----------------------------------------------------------------------
     rezpath = fullfile(kssortedpath, 'rez.mat');
+    %----------------------------------------------------------------------
+    gpuDevice(1);
     if ~exist(rezpath,'file')
          % preprocess data to create temp_wh.dat
         rez = preprocessDataSub(ops);
@@ -109,7 +112,7 @@ for iexp = 1:numel(rootpaths)
         rez = rez.rez;
         tic;
     end
-   
+        
     % main tracking and template matching algorithm
     rez = learnAndSolve8b(rez);
     % save figure
@@ -121,9 +124,9 @@ for iexp = 1:numel(rootpaths)
     rez = find_merges(rez, 1);
 
     % final splits by SVD
-    rez = splitAllClusters(rez, 1);
+    rez = splitAllClustersFast(rez, 1);
     % final splits by amplitudes
-    rez = splitAllClusters(rez, 0);
+    rez = splitAllClustersFast(rez, 0);
 
     % decide on cutoff
     rez = set_cutoff(rez);
@@ -135,9 +138,9 @@ for iexp = 1:numel(rootpaths)
 
     % if you want to save the results to a Matlab file...
 
-    % discard features in final rez file (too slow to save)wm
+    % discard features in final rez file (too slow to save)
     rez.cProj = []; rez.cProjPC = [];
-    if ops.lowmem; delete(rez.cProjpath); delete(rez.cProjPCpath);end
+    
     delete(ops.fproc); % remove temporary file
     
     % save final results as rez2
